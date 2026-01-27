@@ -1,4 +1,5 @@
 import { Post } from "../../../generated/prisma/client"
+import { PostWhereInput } from "../../../generated/prisma/models"
 import { prisma } from "../../lib/prisma"
 
 //! Create a new post
@@ -13,41 +14,55 @@ const createPost = async (data: Omit<Post, 'id' | 'createdAt' | 'authorId' | 'up
 }
 
 //! Get all posts
-const getAllPosts = async (payload: {
+const getAllPosts = async ({ search, tags, isFeatured }: {
     search: string | undefined,
-    tags: string[] | []
+    tags: string[] | [],
+    isFeatured: boolean
 }) => {
 
-    const allPost = await prisma.post.findMany({
-        where: {
-            AND: [
+    const andConditions:PostWhereInput[] = [];
+
+    if (search) {
+        andConditions.push({
+            OR: [
                 {
-                    OR: [
-                        {
-                            title: {
-                                contains: payload.search as string,
-                                mode: 'insensitive'
-                            }
-                        },
-                        {
-                            content: {
-                                contains: payload.search as string,
-                                mode: 'insensitive'
-                            }
-                        },
-                        {
-                            tags: {
-                                has: payload.search as string
-                            }
-                        }
-                    ]
+                    title: {
+                        contains: search,
+                        mode: 'insensitive'
+                    }
+                },
+                {
+                    content: {
+                        contains: search,
+                        mode: 'insensitive'
+                    }
                 },
                 {
                     tags: {
-                        hasEvery: payload.tags
+                        has: search
                     }
                 }
             ]
+        })
+    }
+
+    if(tags.length > 0) {
+        andConditions.push({
+            tags: {
+                hasEvery: tags as string[]
+            }
+        })
+    }
+
+    if(typeof isFeatured ==='boolean') {
+        andConditions.push({
+            isFeatured
+        })
+    }
+
+    const allPost = await prisma.post.findMany({
+        where: {
+            AND: andConditions
         }
     })
     return allPost;
