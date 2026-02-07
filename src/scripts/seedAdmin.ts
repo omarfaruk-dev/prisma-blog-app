@@ -3,9 +3,10 @@ import { UserRole } from "../middlewares/auth";
 
 async function seedAdmin() {
     try {
+        console.log("admin seeding started........");
         const adminData = {
             name: "Omar Faruk",
-            email: "admin@prismablog.com",
+            email: "admin3@admin.com",
             role: UserRole.ADMIN,
             password: "admin1234#",
             emailVerified: true
@@ -32,9 +33,21 @@ async function seedAdmin() {
             body: JSON.stringify(adminData),
         });
 
-        console.log(signUpAdmin.status, signUpAdmin.statusText);
-        const resData = await signUpAdmin.text();
-        console.log(resData);
+        //manually add email verified to true since we are seeding the admin user
+        if(signUpAdmin.ok) {
+            console.log("admin created");
+        await prisma.user.update({
+            where: {
+                email: adminData.email,
+            },
+            data: {
+                emailVerified: true,
+            }
+        })
+        console.log("email verify status updated");
+        }
+
+        console.log("****success****");
 
 
     } catch (error) {
