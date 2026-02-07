@@ -1,31 +1,41 @@
-import { Post } from "../../../generated/prisma/client"
-import { PostWhereInput } from "../../../generated/prisma/models"
-import { prisma } from "../../lib/prisma"
+import { Post, PostStatus } from "../../../generated/prisma/client";
+import { PostWhereInput } from "../../../generated/prisma/models";
+import { prisma } from "../../lib/prisma";
 
-//! Create a new post
-const createPost = async (data: Omit<Post, 'id' | 'createdAt' | 'authorId' | 'updatedAt'>, userId: string) => {
+const createPost = async (data: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'authorId'>, userId: string) => {
     const result = await prisma.post.create({
         data: {
             ...data,
             authorId: userId
         }
     })
-    return result
+    return result;
 }
 
-//! Get all posts
-const getAllPosts = async ({ search, tags, isFeatured, status, authorId, page, limit, skip }: {
+const getAllPost = async ({
+    search,
+    tags,
+    isFeatured,
+    status,
+    authorId,
+    page,
+    limit,
+    skip,
+    sortBy,
+    sortOrder
+}: {
     search: string | undefined,
     tags: string[] | [],
     isFeatured: boolean | undefined,
-    status: PostStatus | undefined ,
+    status: PostStatus | undefined,
     authorId: string | undefined,
     page: number,
     limit: number,
-    skip: number
+    skip: number,
+    sortBy: string,
+    sortOrder: string
 }) => {
-
-    const andConditions:PostWhereInput[] = [];
+    const andConditions: PostWhereInput[] = []
 
     if (search) {
         andConditions.push({
@@ -33,13 +43,13 @@ const getAllPosts = async ({ search, tags, isFeatured, status, authorId, page, l
                 {
                     title: {
                         contains: search,
-                        mode: 'insensitive'
+                        mode: "insensitive"
                     }
                 },
                 {
                     content: {
                         contains: search,
-                        mode: 'insensitive'
+                        mode: "insensitive"
                     }
                 },
                 {
@@ -51,7 +61,7 @@ const getAllPosts = async ({ search, tags, isFeatured, status, authorId, page, l
         })
     }
 
-    if(tags.length > 0) {
+    if (tags.length > 0) {
         andConditions.push({
             tags: {
                 hasEvery: tags as string[]
@@ -59,18 +69,19 @@ const getAllPosts = async ({ search, tags, isFeatured, status, authorId, page, l
         })
     }
 
-    if(typeof isFeatured ==='boolean') {
+    if (typeof isFeatured === 'boolean') {
         andConditions.push({
             isFeatured
         })
     }
 
-    if(status) {
+    if (status) {
         andConditions.push({
             status
         })
     }
-    if(authorId) {
+
+    if (authorId) {
         andConditions.push({
             authorId
         })
@@ -81,12 +92,51 @@ const getAllPosts = async ({ search, tags, isFeatured, status, authorId, page, l
         skip,
         where: {
             AND: andConditions
+        },
+        orderBy: {
+            [sortBy]: sortOrder
+        }
+    });
+
+    const total = await prisma.post.count({
+        where: {
+            AND: andConditions
         }
     })
-    return allPost;
+    return {
+        data: allPost,
+        pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit)
+        }
+    };
 }
 
-export const PostService = {
+const getPostById = async (postId: string) => {
+    return await prisma.$transaction(async (tx) => {
+        await tx.post.update({
+            where: {
+                id: postId
+            },
+            data: {
+                views: {
+                    increment: 1
+                }
+            }
+        })
+        const postData = await tx.post.findUnique({
+            where: {
+                id: postId
+            }
+        })
+        return postData
+    })
+}
+
+export const postService = {
     createPost,
-    getAllPosts
+    getAllPost,
+    getPostById
 }
