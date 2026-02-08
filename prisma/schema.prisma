@@ -25,7 +25,7 @@ model Post {
   authorId   String
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
-  post       Comment[]
+  comments       Comment[]
 
   @@index([authorId])
   @@map("posts")
