@@ -1,3 +1,5 @@
+import { CLIENT_RENEG_LIMIT } from "node:tls";
+import { CommentStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 
 
@@ -85,10 +87,32 @@ const deleteComment = async (commentId: string, authorId: string) => {
 
 }
 
+const updateComment = async (commentId: string,data: {content?: string, status?: CommentStatus}, authorId: string) => {
+    const commentData = await prisma.comment.findFirst({
+        where: {
+            id: commentId,
+            authorId
+        },
+        select: {
+            id: true,
+        }
+    })
+    if (!commentData) {
+        throw new Error("Comment Not Found")
+    }
+
+    return await prisma.comment.update ({
+        where: {
+            id: commentId
+        },
+        data
+    })
+}
 
 export const CommentService = {
     createComment,
     getCommentById,
     getCommentsByAuthorId,
-    deleteComment
+    deleteComment,
+    updateComment,
 }
