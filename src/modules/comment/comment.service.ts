@@ -109,10 +109,26 @@ const updateComment = async (commentId: string,data: {content?: string, status?:
     })
 }
 
+const moderateComment = async (id: string, data: {status: CommentStatus}) => {
+    const commentData = await prisma.comment.findFirstOrThrow({
+        where: {
+            id
+        }
+    })
+
+    return await prisma.comment.update ({
+        where: {
+            id
+        },
+        data
+    })
+}
+
 export const CommentService = {
     createComment,
     getCommentById,
     getCommentsByAuthorId,
     deleteComment,
     updateComment,
+    moderateComment
 }
