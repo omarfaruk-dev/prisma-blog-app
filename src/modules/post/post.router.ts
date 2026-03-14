@@ -9,6 +9,11 @@ router.get('/',
     PostController.getAllPost
 )
 
+router.get(
+    'my-posts',
+    PostController.getMyPosts
+)
+
 router.get('/:postId',
     PostController.getPostById
 )
